@@ -1,11 +1,11 @@
 {
   "name": "ielts-writing-test",
   "version": "1.0.0",
-  "description": "IELTS Writing Test Platform with Security Monitoring",
+  "description": "IELTS Writing Test Platform",
   "type": "module",
   "scripts": {
     "dev": "vercel dev",
-    "build": "echo 'No build step required for static site'",
+    "build": "echo 'No build step required'",
     "deploy": "vercel --prod"
   },
   "dependencies": {
