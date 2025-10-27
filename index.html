@@ -130,43 +130,6 @@
     .review-btn:hover {
       background-color: #5a6268;
     }
-    .upload-section {
-      margin-bottom: 15px;
-    }
-    .upload-section input[type="file"],
-    .upload-section textarea {
-      margin-top: 5px;
-      width: 100%;
-    }
-    .upload-section textarea {
-      height: 60px;
-    }
-    .topic-buttons {
-      margin-top: 10px;
-    }
-    .topic-buttons button {
-      padding: 8px 16px;
-      margin-right: 10px;
-      cursor: pointer;
-      font-size: 14px;
-      border-radius: 4px;
-    }
-    .topic-added-btn {
-      background-color: #28a745;
-      color: white;
-      border: none;
-    }
-    .topic-added-btn:hover {
-      background-color: #218838;
-    }
-    .edit-topic-btn {
-      background-color: #ffc107;
-      color: black;
-      border: none;
-    }
-    .edit-topic-btn:hover {
-      background-color: #e0a800;
-    }
     
     /* Test info banner */
     .test-info {
@@ -575,10 +538,10 @@
       }
     };
 
-    // Typing speed thresholds (in Words Per Minute)
+    // Typing speed thresholds
     const SPEED_THRESHOLD = 120;
     const PASTE_THRESHOLD = 10;
-    const RAPID_KEYSTROKE_THRESHOLD = 50; // milliseconds
+    const RAPID_KEYSTROKE_THRESHOLD = 50;
     const MAX_SPEED_VIOLATIONS = 2;
 
     // Initialize the page
@@ -599,7 +562,7 @@
       });
     }
 
-    // Start the test when user clicks "I Understand"
+    // Start the test
     function startTest() {
       studentName = document.getElementById("studentName").value.trim();
       
@@ -647,12 +610,10 @@
       const now = Date.now();
       const data = typingData[`task${task}`];
       
-      // Detect rapid keystrokes
       if (data.lastKeyTime > 0) {
         const timeDiff = now - data.lastKeyTime;
         if (timeDiff < RAPID_KEYSTROKE_THRESHOLD) {
           violations.rapidKeystrokes++;
-          console.log(`Rapid keystroke detected in Task ${task}: ${timeDiff}ms`);
         }
       }
       
@@ -716,8 +677,6 @@
     function handleTypingViolation(task, reason) {
       const data = typingData[`task${task}`];
       data.speedViolations++;
-      
-      console.log(`Typing violation in Task ${task}: ${reason}. Violations: ${data.speedViolations}`);
       
       if (data.speedViolations >= MAX_SPEED_VIOLATIONS) {
         handleViolation('typing', reason);
@@ -796,9 +755,7 @@
         if (isTestActive) {
           if (e.key === 'F12' || 
               (e.ctrlKey && e.shiftKey && e.key === 'I') ||
-              (e.ctrlKey && e.shiftKey && e.key === 'C') ||
-              (e.ctrlKey && e.key === 'c') ||
-              (e.ctrlKey && e.key === 'v')) {
+              (e.ctrlKey && e.shiftKey && e.key === 'C')) {
             e.preventDefault();
             return false;
           }
@@ -814,8 +771,6 @@
       warningCount++;
       updateViolationCounter();
       
-      console.log(`Violation #${warningCount}: ${type} - ${reason}`);
-      
       if (warningCount >= maxWarnings) {
         document.getElementById("warningModal").style.display = "flex";
       } else {
@@ -827,7 +782,7 @@
       }
     }
 
-    // Get violation message based on type
+    // Get violation message
     function getViolationMessage(type) {
       const messages = {
         'tab_switch': 'Switching browser tabs is not allowed during the test.',
@@ -839,8 +794,6 @@
     }
 
     // Word count and tab switching
-    let latestText1 = "", latestText2 = "";
-
     function updateWordCount(part) {
       const text = document.getElementById("textarea" + part).value.trim();
       const wordCount = text === "" ? 0 : text.split(/\s+/).length;
@@ -852,9 +805,6 @@
       } else {
         countElement.classList.remove("warning");
       }
-      
-      if (part === "1") latestText1 = text;
-      else latestText2 = text;
     }
 
     function switchTab(part) {
@@ -872,7 +822,7 @@
       document.getElementById("partBar").innerHTML = partText;
     }
 
-    // Submit test - sends to Telegram and downloads PDF
+    // Submit test with Telegram report
     async function submitTest() {
       if (isSubmitted) {
         alert("Test has already been submitted. You can only review your answers now.");
@@ -881,76 +831,61 @@
       
       document.getElementById("loadingIndicator").style.display = "block";
       
-      // Prepare detailed violation report
-      const violationReport = {
-        totalViolations: violations.total,
-        warningCount: warningCount,
-        detailed: {
-          tabSwitching: violations.tabSwitching,
-          appSwitching: violations.appSwitching,
-          highTypingSpeed: violations.highTypingSpeed,
-          pasteDetected: violations.pasteDetected,
-          rapidKeystrokes: violations.rapidKeystrokes
-        },
-        typingData: {
-          task1: {
-            maxSpeed: typingData.task1.currentSpeed,
-            speedViolations: typingData.task1.speedViolations,
-            pasteEvents: typingData.task1.pasteEvents
-          },
-          task2: {
-            maxSpeed: typingData.task2.currentSpeed,
-            speedViolations: typingData.task2.speedViolations,
-            pasteEvents: typingData.task2.pasteEvents
-          }
-        }
-      };
-
+      // Get test data
+      const task1Answer = document.getElementById("textarea1").value;
+      const task2Answer = document.getElementById("textarea2").value;
+      const task1WordCount = task1Answer.trim().split(/\s+/).length;
+      const task2WordCount = task2Answer.trim().split(/\s+/).length;
+      
       const testData = {
         studentName: studentName,
-        testName: "IELTS Writing Test - Set One",
+        timestamp: new Date().toLocaleString(),
+        duration: (60 * 60 - totalSeconds) + " seconds",
         task1: {
           question: chosenTask1.question,
-          answer: document.getElementById("textarea1").value,
-          wordCount: document.getElementById("count1").textContent,
-          typingSpeed: typingData.task1.currentSpeed
+          answer: task1Answer,
+          wordCount: task1WordCount
         },
         task2: {
           question: chosenTask2,
-          answer: document.getElementById("textarea2").value,
-          wordCount: document.getElementById("count2").textContent,
-          typingSpeed: typingData.task2.currentSpeed
+          answer: task2Answer,
+          wordCount: task2WordCount
         },
-        timestamp: new Date().toISOString(),
-        duration: (60 * 60 - totalSeconds) + " seconds",
-        violations: violationReport,
-        submissionType: isTestActive ? (warningCount >= maxWarnings ? "AUTO_SUBMITTED_VIOLATIONS" : "MANUAL") : "TIME_EXPIRED"
+        violations: violations,
+        typingData: typingData,
+        totalWords: task1WordCount + task2WordCount
       };
       
-      // Create detailed message for Telegram
-      const telegramMessage = createDetailedTelegramMessage(testData);
+      // Create Telegram message
+      const telegramMessage = createTelegramMessage(testData);
       
       try {
+        // Send to Telegram via API
         const response = await fetch('/api/telegram', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            ...testData,
-            telegramMessage: telegramMessage
+            message: telegramMessage,
+            testData: testData
           })
         });
         
         if (response.ok) {
-          console.log('Answers sent to Telegram successfully');
+          console.log('Report sent to Telegram successfully');
         } else {
-          console.error('Failed to send answers to Telegram');
+          console.error('Failed to send report to Telegram');
+          // Fallback: log to console
+          console.log('TELEGRAM REPORT:\n' + telegramMessage);
         }
       } catch (error) {
         console.error('Error sending to Telegram:', error);
+        // Fallback: log to console
+        console.log('TELEGRAM REPORT (Fallback):\n' + telegramMessage);
       }
       
+      // Download PDF
       downloadPDF();
       
       document.getElementById("loadingIndicator").style.display = "none";
@@ -967,33 +902,60 @@
       document.getElementById("textarea2").disabled = true;
     }
 
-    // Create detailed Telegram message with violation report
-    function createDetailedTelegramMessage(testData) {
-      const violations = testData.violations;
+    // Create Telegram message in the exact format requested
+    function createTelegramMessage(testData) {
+      const task1WordCount = testData.task1.wordCount;
+      const task2WordCount = testData.task2.wordCount;
+      const totalWords = task1WordCount + task2WordCount;
       
-      let message = `📝 IELTS WRITING TEST SUBMISSION\n`;
-      message += `👤 Student: ${testData.studentName}\n`;
-      message += `⏰ Duration: ${testData.duration}\n`;
-      message += `📊 Submission: ${testData.submissionType}\n\n`;
+      let message = "📝 IELTS WRITING TEST SUBMITTED\n\n";
       
-      message += `🚨 VIOLATION REPORT:\n`;
-      message += `• Total Violations: ${violations.totalViolations}\n`;
-      message += `• Final Warning Count: ${violations.warningCount}/2\n\n`;
+      message += "👤 STUDENT INFORMATION\n";
+      message += `• Name: ${testData.studentName}\n`;
+      message += `• Test: IELTS Writing Test - Set One\n`;
+      message += `• Timestamp: ${testData.timestamp}\n`;
+      message += `• Duration: ${testData.duration}\n\n`;
       
-      message += `📋 Violation Details:\n`;
-      message += `• Tab Switching: ${violations.detailed.tabSwitching}\n`;
-      message += `• App Switching: ${violations.detailed.appSwitching}\n`;
-      message += `• High Typing Speed: ${violations.detailed.highTypingSpeed}\n`;
-      message += `• Paste Detected: ${violations.detailed.pasteDetected}\n`;
-      message += `• Rapid Keystrokes: ${violations.detailed.rapidKeystrokes}\n\n`;
+      message += "📋 TASK 1 - DIAGRAM DESCRIPTION\n";
+      message += "Question:\n";
+      message += `${testData.task1.question}\n\n`;
       
-      message += `⌨️ Typing Analysis:\n`;
-      message += `• Task 1 - Speed: ${violations.typingData.task1.maxSpeed} WPM, Violations: ${violations.typingData.task1.speedViolations}, Pastes: ${violations.typingData.task1.pasteEvents}\n`;
-      message += `• Task 2 - Speed: ${violations.typingData.task2.maxSpeed} WPM, Violations: ${violations.typingData.task2.speedViolations}, Pastes: ${violations.typingData.task2.pasteEvents}\n\n`;
+      message += "📝 Student's Answer:\n";
+      message += `${testData.task1.answer}\n\n`;
       
-      message += `📖 Word Counts:\n`;
-      message += `• Task 1: ${testData.task1.wordCount}\n`;
-      message += `• Task 2: ${testData.task2.wordCount}\n`;
+      message += "📊 Task 1 Statistics:\n";
+      message += `• Words: ${task1WordCount}\n`;
+      message += `• Actual Word Count: ${task1WordCount}\n\n`;
+      
+      message += "📝 TASK 2 - ESSAY WRITING\n";
+      message += "Question:\n";
+      message += `${testData.task2.question}\n\n`;
+      
+      message += "📝 Student's Answer:\n";
+      message += `${testData.task2.answer}\n\n`;
+      
+      message += "📊 Task 2 Statistics:\n";
+      message += `• Words: ${task2WordCount}\n`;
+      message += `• Actual Word Count: ${task2WordCount}\n\n`;
+      
+      message += "📈 OVERALL STATISTICS\n";
+      message += `• Total Words Written: ${totalWords}\n`;
+      message += `• Task 1 Words: ${task1WordCount} ${task1WordCount < 150 ? "❌" : "✅"}\n`;
+      message += `• Task 2 Words: ${task2WordCount} ${task2WordCount < 250 ? "❌" : "✅"}\n\n`;
+      
+      // Add violation report
+      message += "🚨 VIOLATION REPORT\n";
+      message += `• Total Violations: ${testData.violations.total}\n`;
+      message += `• Tab Switching: ${testData.violations.tabSwitching}\n`;
+      message += `• App Switching: ${testData.violations.appSwitching}\n`;
+      message += `• High Typing Speed: ${testData.violations.highTypingSpeed}\n`;
+      message += `• Paste Detected: ${testData.violations.pasteDetected}\n`;
+      message += `• Rapid Keystrokes: ${testData.violations.rapidKeystrokes}\n`;
+      message += `• Final Warnings: ${warningCount}/${maxWarnings}\n\n`;
+      
+      message += "---\n";
+      message += "✅ Test automatically submitted and recorded\n";
+      message += `🕒 System Time: ${new Date().toLocaleString()}`;
       
       return message;
     }
@@ -1012,15 +974,14 @@
       doc.text("IELTS Writing Test - Set One", 10, 10);
       doc.setFontSize(12);
       doc.text(`Student: ${studentName}`, 10, 20);
-      
-      // Add violation report to PDF
-      doc.text(`Violations: ${violations.total} (${warningCount}/2 warnings)`, 10, 30);
+      doc.text(`Timestamp: ${new Date().toLocaleString()}`, 10, 30);
+      doc.text(`Violations: ${violations.total} (${warningCount}/2 warnings)`, 10, 40);
       
       doc.setFontSize(14);
-      doc.text("IELTS Writing Task 1", 10, 45);
+      doc.text("IELTS Writing Task 1", 10, 55);
       doc.setFontSize(12);
       
-      let yOffset = 55;
+      let yOffset = 65;
       if (chosenTask1.question) {
         const task1Lines = doc.splitTextToSize(chosenTask1.question.replace(/\n/g, " "), 180);
         doc.text(task1Lines, 10, yOffset);
@@ -1068,13 +1029,9 @@
             doc.text("Answer:", 10, 85);
             const answer2Lines = doc.splitTextToSize(document.getElementById("textarea2").value, 180);
             doc.text(answer2Lines, 10, 95);
-          } else {
-            doc.text("Answer:", 10, 55);
-            const answer2Lines = doc.splitTextToSize(document.getElementById("textarea2").value, 180);
-            doc.text(answer2Lines, 10, 65);
           }
 
-          doc.save(`IELTS_Writing_Set_One_${studentName.replace(/\s+/g, '_')}.pdf`);
+          doc.save(`IELTS_Writing_${studentName.replace(/\s+/g, '_')}.pdf`);
         };
       } else {
         doc.text("Answer:", 10, yOffset);
@@ -1097,13 +1054,9 @@
           doc.text("Answer:", 10, 85);
           const answer2Lines = doc.splitTextToSize(document.getElementById("textarea2").value, 180);
           doc.text(answer2Lines, 10, 95);
-        } else {
-          doc.text("Answer:", 10, 55);
-          const answer2Lines = doc.splitTextToSize(document.getElementById("textarea2").value, 180);
-          doc.text(answer2Lines, 10, 65);
         }
 
-        doc.save(`IELTS_Writing_Set_One_${studentName.replace(/\s+/g, '_')}.pdf`);
+        doc.save(`IELTS_Writing_${studentName.replace(/\s+/g, '_')}.pdf`);
       }
     }
 
@@ -1115,7 +1068,7 @@
       clearInterval(timer);
     }
 
-    // Improved page unload handler
+    // Page unload handler
     window.onbeforeunload = function (e) {
       if (isTestActive && !isSubmitted && !beforeUnloadTriggered) {
         const message = "Are you sure you want to leave? Your test progress may be lost.";
